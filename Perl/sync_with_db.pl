@@ -14,12 +14,18 @@ $Data::Dumper::Indent = 1;
 STDOUT->autoflush(1);
 
 my $src = encode('gbk', "E:\\Company\\S烧录程序_软件");
+my $spec = encode('gbk', "烧录");  # target folder name
 my $dst;
 my $drv;
 my $hash = {};
 
-grep { $drv = $_ if (-e "${_}:/isme.x") } ('D'..'Z');
-$dst = encode('gbk', "${drv}:\\烧录");
+$drv = find_target_drive( $spec );
+if ( defined $drv ) {
+    $dst = "${drv}:\\${spec}";
+} else {
+    printf "Target not found\n";
+    exit;
+}
 
 my $dbfile = "${drv}:\\tree.db";
 
@@ -31,10 +37,11 @@ if (-e $dbfile) {
 }
 
 #print Dumper $hash;
-sync(  );
+sync_files();
 update_db($hash, $dbfile);
+printf "Done\n";
 
-sub sync
+sub sync_files
 {
     my $s = `dir /s /b $src`;
     my $src_path;
@@ -109,6 +116,14 @@ sub to_hash
         $ref->{$e} = {} unless exists $ref->{$e};
         $ref = $ref->{$e};
     }
+}
+
+sub find_target_drive
+{
+    my ($spec) = @_;
+    my $drv;
+    grep { $drv = $_ if (-e "${_}:\\${spec}") } ('D'..'Z');
+    return $drv;
 }
 
 sub update_db
